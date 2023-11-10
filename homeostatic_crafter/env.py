@@ -79,7 +79,19 @@ class Env(BaseClass):
         self._world.add(self._player)
         self._unlocked = set()
         worldgen.generate_world(self._world, self._player)
-        return self._obs()
+        
+        reward, normalized_health = self.get_reward()
+        info = {
+            'inventory'   : self._player.inventory.copy(),
+            'achievements': self._player.achievements.copy(),
+            'discount'    : 1 - float(False),
+            'semantic'    : self._sem_view(),
+            'player_pos'  : self._player.pos,
+            'reward'      : None,
+            'normalized_health': normalized_health,
+        }
+        
+        return self._obs(), info
     
     def step(self, action):
         self._step += 1

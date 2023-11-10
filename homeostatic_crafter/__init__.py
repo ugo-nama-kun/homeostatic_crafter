@@ -7,7 +7,7 @@ try:
       id='HomeostaticCrafter-v1',
       entry_point='homeostatic_crafter:Env',
       max_episode_steps=10000,
-      kwargs={'reward': True})
+      kwargs={'reward': True, 'random_health': True})
   # gym.register(
   #     id='CrafterNoReward-v1',
   #     entry_point='crafter:Env',
