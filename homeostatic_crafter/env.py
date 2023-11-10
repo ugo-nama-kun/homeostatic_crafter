@@ -7,30 +7,40 @@ from . import engine
 from . import objects
 from . import worldgen
 
-# Gym is an optional dependency.
-try:
-    import gym
-    
-    DiscreteSpace = gym.spaces.Discrete
-    BoxSpace = gym.spaces.Box
-    DictSpace = gym.spaces.Dict
-    BaseClass = gym.Env
-except ImportError:
-    DiscreteSpace = collections.namedtuple('DiscreteSpace', 'n')
-    BoxSpace = collections.namedtuple('BoxSpace', 'low, high, shape, dtype')
-    DictSpace = collections.namedtuple('DictSpace', 'spaces')
-    BaseClass = object
+import gymnasium as gym
 
+DiscreteSpace = gym.spaces.Discrete
+BoxSpace = gym.spaces.Box
+DictSpace = gym.spaces.Dict
+BaseClass = gym.Env
+
+from gymnasium.wrappers.frame_stack import LazyFrames
 
 class Env(BaseClass):
     
     def __init__(
-            self, area=(64, 64), view=(9, 9), size=(64, 64),
-            reward=True, length=10000, seed=None, random_health=False):
+            self,
+            area=(64, 64),
+            view=(9, 9),
+            size=(64, 64),
+            reward=True,
+            length=10000,
+            seed=None,
+            random_health=False,
+            gray_scale=True,
+            num_stack=4,
+            lz4_compress: bool = False,
+    ):
         view = np.array(view if hasattr(view, '__len__') else (view, view))
         size = np.array(size if hasattr(size, '__len__') else (size, size))
         seed = np.random.randint(0, 2 ** 31 - 1) if seed is None else seed
+        self.gray_scale = gray_scale
         self._random_health = random_health
+        self.num_stack = num_stack
+        self.lz4_compress = lz4_compress
+
+        self.frames = collections.deque(maxlen=num_stack)
+
         self._area = area
         self._view = view
         self._size = size
@@ -58,7 +68,17 @@ class Env(BaseClass):
     
     @property
     def observation_space(self):
-        return BoxSpace(0, 255, tuple(self._size) + (3,), np.uint8)
+        # return BoxSpace(0, 255, tuple(self._size) + (3,), np.uint8)
+        if self.gray_scale:
+            return DictSpace({
+                "vision": BoxSpace(0, 255, (self.num_stack,) + tuple(self._size), np.uint8),
+                "intero": BoxSpace(0, 1, (1,), np.float32),
+            })
+        else:
+            return DictSpace({
+                "vision": BoxSpace(0, 255, (self.num_stack,) + tuple(self._size) + (3,), np.uint8),
+                "intero": BoxSpace(0, 1, (1,), np.float32),
+            })
     
     @property
     def action_space(self):
@@ -68,7 +88,10 @@ class Env(BaseClass):
     def action_names(self):
         return constants.actions
     
-    def reset(self):
+    def reset(self, seed=None, options=None):
+        if seed is not None:
+            self._seed = seed
+
         center = (self._world.area[0] // 2, self._world.area[1] // 2)
         self._episode += 1
         self._step = 0
@@ -91,7 +114,7 @@ class Env(BaseClass):
             'normalized_health': normalized_health,
         }
         
-        return self._obs(), info
+        return self._obs(reset=True), info
     
     def step(self, action):
         self._step += 1
@@ -132,7 +155,7 @@ class Env(BaseClass):
         }
         if not self._reward:
             reward = 0.0
-        return obs, reward, done, info
+        return obs, reward, done, False, info
     
     def get_reward(self):
         health_normal = self.normalize_health(self._player.health)
@@ -158,8 +181,25 @@ class Env(BaseClass):
         canvas[x: x + w, y: y + h] = view
         return canvas.transpose((1, 0, 2))
     
-    def _obs(self):
-        return self.render()
+    def _obs(self, reset=False):
+        keep_dim = False
+        vision = self.render()
+        
+        if self.gray_scale:
+            import cv2
+            
+            vision = cv2.cvtColor(vision, cv2.COLOR_RGB2GRAY)
+            if keep_dim:
+                vision = np.expand_dims(vision, -1)
+                
+        if reset:
+            [self.frames.append(vision) for _ in range(self.num_stack)]
+        
+        self.frames.append(vision)
+        assert len(self.frames) == self.num_stack, (len(self.frames), self.num_stack)
+
+        return {"vision": LazyFrames(list(self.frames), self.lz4_compress),
+                "intero": np.array([self.normalize_health(self._player.health)], dtype=np.float32)}
     
     def _update_time(self):
         # https://www.desmos.com/calculator/grfbc6rs3h

@@ -41,7 +41,8 @@ def main():
         done = False
         while not done:
             action = random.randint(0, env.action_space.n)
-            obs, reward, done, info = env.step(action)
+            obs, reward, done, truncated, info = env.step(action)
+            done = done | truncated
             
             reward_hist.append(reward)
             

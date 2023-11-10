@@ -2,8 +2,8 @@ from .env import Env
 from .recorder import Recorder
 
 try:
-  import gym
-  gym.register(
+  import gymnasium
+  gymnasium.register(
       id='HomeostaticCrafter-v1',
       entry_point='homeostatic_crafter:Env',
       max_episode_steps=10000,
