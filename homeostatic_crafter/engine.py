@@ -231,7 +231,7 @@ class ItemView:
       if amount < 1:
         continue
       self._item(canvas, index, item, unit)
-      self._amount(canvas, index, amount, unit)
+      self._amount(canvas, index, int(amount), unit)
     return canvas
 
   def _item(self, canvas, index, item, unit):
