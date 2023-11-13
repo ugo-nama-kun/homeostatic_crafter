@@ -173,7 +173,7 @@ class Player(Object):
     self.health -= 1 / 15
   
   def _wake_up_when_hurt(self):
-    if self.health < self._last_health:
+    if self.health - self._last_health < -0.9:  # wake up if got large damage
       self.sleeping = False
     self._last_health = self.health
 
