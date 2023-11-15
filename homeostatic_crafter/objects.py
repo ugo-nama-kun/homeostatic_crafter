@@ -74,7 +74,7 @@ class Player(Object):
         name: info['initial'] for name, info in constants.items.items()}
     
     if random_health:
-      self.inventory["health"] = constants.items["health"]["max"] * np.random.rand()
+      self.inventory["health"] = 2.0 + (constants.items["health"]["max"] - 2) * np.random.rand()
     
     self.achievements = {name: 0 for name in constants.achievements}
     self.action = 'noop'
