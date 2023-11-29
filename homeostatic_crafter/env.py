@@ -14,7 +14,7 @@ BoxSpace = gym.spaces.Box
 DictSpace = gym.spaces.Dict
 BaseClass = gym.Env
 
-from gymnasium.wrappers.frame_stack import LazyFrames
+# from gymnasium.wrappers.frame_stack import LazyFrames
 
 class Env(BaseClass):
     
@@ -27,13 +27,13 @@ class Env(BaseClass):
             length=10000,
             seed=None,
             random_health=False,
-            lz4_compress: bool = False,
+            # lz4_compress: bool = False,
     ):
         view = np.array(view if hasattr(view, '__len__') else (view, view))
         size = np.array(size if hasattr(size, '__len__') else (size, size))
         seed = np.random.randint(0, 2 ** 31 - 1) if seed is None else seed
         self._random_health = random_health
-        self.lz4_compress = lz4_compress
+        # self.lz4_compress = lz4_compress
 
         self._area = area
         self._view = view
@@ -64,8 +64,9 @@ class Env(BaseClass):
     def observation_space(self):
         # return BoxSpace(0, 255, tuple(self._size) + (3,), np.uint8)
         return DictSpace({
-            "vision": BoxSpace(0, 255, tuple(self._size) + (3,), np.uint8),
-            "intero": BoxSpace(0, 1, (1,), np.float32),
+            # "vision": BoxSpace(0, 255, tuple(self._size) + (3,), np.uint8),
+            "obs": BoxSpace(0, 255, (3,) + tuple(self._size), np.uint8),  # pytorch order
+            "measurements": BoxSpace(0, 1, (1,), np.float32),
         })
     
     @property
@@ -173,9 +174,14 @@ class Env(BaseClass):
         keep_dim = False
         vision = self.render()
 
-        return {"vision": LazyFrames(vision, self.lz4_compress),
-                "intero": np.array([self.normalize_health(self._player.health)], dtype=np.float32)}
-    
+        vision = np.transpose(vision, (2, 0, 1))
+
+        # return {"vision": LazyFrames(vision, self.lz4_compress),
+        #         "intero": np.array([self.normalize_health(self._player.health)], dtype=np.float32)}
+
+        return {"obs": vision,
+                "measurements": np.array([self.normalize_health(self._player.health)], dtype=np.float32)}
+
     def _update_time(self):
         # https://www.desmos.com/calculator/grfbc6rs3h
         progress = (self._step / 300) % 1 + 0.3
