@@ -55,7 +55,7 @@ items:
   iron_sword: {max: 9, initial: 0}
 
 homeostasis:
-  target: 0.8
+  target: 0.9
 
 collect:
   tree: {require: {}, receive: {wood: 1}, leaves: grass}

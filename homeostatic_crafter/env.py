@@ -26,13 +26,13 @@ class Env(BaseClass):
             reward=True,
             length=10000,
             seed=None,
-            random_health=False,
+            random_internal=False,
             # lz4_compress: bool = False,
     ):
         view = np.array(view if hasattr(view, '__len__') else (view, view))
         size = np.array(size if hasattr(size, '__len__') else (size, size))
         seed = np.random.randint(0, 2 ** 31 - 1) if seed is None else seed
-        self._random_health = random_health
+        self._random_health = random_internal
         # self.lz4_compress = lz4_compress
 
         self._area = area
@@ -54,11 +54,18 @@ class Env(BaseClass):
             objects.Skeleton, objects.Arrow, objects.Plant])
         self._step = None
         self._player = None
-        self._last_health = None
+        self._last_intero = None
         self._unlocked = None
         # Some libraries expect these attributes to be set.
         self.reward_range = None
         self.metadata = None
+        
+        self._intero_normalizer = np.array([
+            constants.items['health']['max'],
+            constants.items['food']['max'],
+            constants.items['drink']['max'],
+            constants.items['energy']['max']
+        ], dtype=np.float32)
     
     @property
     def observation_space(self):
@@ -86,13 +93,15 @@ class Env(BaseClass):
         self._step = 0
         self._world.reset(seed=hash((self._seed, self._episode)) % (2 ** 31 - 1))
         self._update_time()
-        self._player = objects.Player(self._world, center, random_health=self._random_health)
-        self._last_health = self._player.health
+        self._player = objects.Player(self._world, center, random_internal=self._random_health)
+        
+        self._last_intero = self._player.get_interoception()
+        
         self._world.add(self._player)
         self._unlocked = set()
         worldgen.generate_world(self._world, self._player)
         
-        reward, normalized_health = self.get_reward()
+        reward, intero_now = self.get_reward()
         info = {
             'inventory'   : self._player.inventory.copy(),
             'achievements': self._player.achievements.copy(),
@@ -100,7 +109,7 @@ class Env(BaseClass):
             'semantic'    : self._sem_view(),
             'player_pos'  : self._player.pos,
             'reward'      : None,
-            'normalized_health': normalized_health,
+            'interoception': intero_now,
         }
         
         return self._obs(reset=True), info
@@ -118,12 +127,15 @@ class Env(BaseClass):
                 # center = (xmax - xmin) // 2, (ymax - ymin) // 2
                 # if self._player.distance(center) < 4 * max(self._view):
                 self._balance_chunk(chunk, objs)
+        
+        self._player.update_interoception()
         obs = self._obs()
         
         # reward = (self._player.health - self._last_health) / 10  # original reward
-        reward, normalized_health = self.get_reward()
+        reward, intero_now = self.get_reward()
         
-        self._last_health = self._player.health
+        self._last_intero = self._player.get_interoception()
+        
         unlocked = {
             name for name, count in self._player.achievements.items()
             if count > 0 and name not in self._unlocked}
@@ -140,24 +152,21 @@ class Env(BaseClass):
             'semantic'    : self._sem_view(),
             'player_pos'  : self._player.pos,
             'reward'      : reward,
-            'normalized_health': normalized_health,
+            'interoception': intero_now,
         }
         if not self._reward:
             reward = 0.0
         return obs, reward, done, False, info
     
     def get_reward(self):
-        health_normal = self.normalize_health(self._player.health)
-        last_health_normal = self.normalize_health(self._last_health)
+        norm_intero = self._player.get_interoception() / self._intero_normalizer
+        last_norm_intero = self._last_intero / self._intero_normalizer
         
         def drive(x):
-            return (x - constants.homeostasis['target']) ** 2
+            return np.sum((x - constants.homeostasis['target']) ** 2)
         
-        return 100 * (drive(last_health_normal) - drive(health_normal)), health_normal
-    
-    def normalize_health(self, raw_health):
-        return raw_health / constants.items["health"]["max"]
-    
+        return 100 * (drive(last_norm_intero) - drive(norm_intero)), self._player.get_interoception()
+        
     def render(self, size=None):
         size = size or self._size
         unit = size // self._view
@@ -171,16 +180,16 @@ class Env(BaseClass):
         return canvas.transpose((1, 0, 2))
     
     def _obs(self, reset=False):
-        keep_dim = False
         vision = self.render()
-
         vision = np.transpose(vision, (2, 0, 1))
+        
+        norm_intero = self._player.get_interoception() / self._intero_normalizer
 
         # return {"vision": LazyFrames(vision, self.lz4_compress),
         #         "intero": np.array([self.normalize_health(self._player.health)], dtype=np.float32)}
 
         return {"obs": vision,
-                "measurements": np.array([self.normalize_health(self._player.health)], dtype=np.float32)}
+                "measurements": norm_intero}
 
     def _update_time(self):
         # https://www.desmos.com/calculator/grfbc6rs3h

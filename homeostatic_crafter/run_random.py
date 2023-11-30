@@ -21,11 +21,11 @@ def main():
     random = np.random.RandomState(args.seed)
     homeostatic_crafter.constants.items['health']['max'] = args.health
     homeostatic_crafter.constants.items['health']['initial'] = args.health
-    env = homeostatic_crafter.Env(area=args.area, length=args.length, seed=args.seed, random_health=True)
+    env = homeostatic_crafter.Env(area=args.area, length=args.length, seed=args.seed, random_internal=True)
     env = homeostatic_crafter.Recorder(env, args.record)
     
     reward_hist = []
-    health_hist = []
+    intero_hist = []
     
     for _ in range(args.episodes):
         
@@ -47,10 +47,10 @@ def main():
             reward_hist.append(reward)
             
             # print(info.keys())
-            # print(f"health : {info['inventory']['health']}, thirst: {env._player._thirst}, hunger: {env._player._hunger}")
-            # print(f"reward: {reward}")
+            print(f"health : {info['inventory']['health']}, thirst: {env._player._thirst}, hunger: {env._player._hunger}")
+            print(info["interoception"])
             
-            health_hist.append(info['normalized_health'])
+            intero_hist.append(info['interoception'])
         
         duration = time.time() - start
         step = env._step
@@ -59,15 +59,20 @@ def main():
         
         plt.subplot(231)
         plt.plot(reward_hist)
+        plt.title("reward")
         plt.subplot(232)
-        plt.plot(health_hist)
-        plt.plot(np.ones_like(health_hist) * 0.8, "--k", alpha=0.6)
+        plt.plot(intero_hist, label=["health", "food", "drink", "energy"])
+        plt.plot(args.health * np.ones_like(intero_hist) * homeostatic_crafter.constants.homeostasis['target'], "--k", alpha=0.6)
+        plt.ylim([-0.1, 9.1])
+        plt.title("intero")
+        plt.legend()
         plt.subplot(234)
         plt.imshow(obs["obs"][0])
         plt.subplot(235)
         plt.imshow(obs["obs"][1])
         plt.subplot(236)
         plt.imshow(obs["obs"][2])
+        plt.tight_layout()
         plt.show()
 
 
