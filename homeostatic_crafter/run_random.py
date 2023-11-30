@@ -57,11 +57,17 @@ def main():
         print(f'Step time: {1000 * duration / step:.2f}ms ({int(step / duration)} FPS)')
         print('Episode length:', step)
         
-        plt.subplot(211)
+        plt.subplot(231)
         plt.plot(reward_hist)
-        plt.subplot(212)
+        plt.subplot(232)
         plt.plot(health_hist)
         plt.plot(np.ones_like(health_hist) * 0.8, "--k", alpha=0.6)
+        plt.subplot(234)
+        plt.imshow(obs["obs"][0])
+        plt.subplot(235)
+        plt.imshow(obs["obs"][1])
+        plt.subplot(236)
+        plt.imshow(obs["obs"][2])
         plt.show()
 
 
