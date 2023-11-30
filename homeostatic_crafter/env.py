@@ -32,7 +32,7 @@ class Env(BaseClass):
         view = np.array(view if hasattr(view, '__len__') else (view, view))
         size = np.array(size if hasattr(size, '__len__') else (size, size))
         seed = np.random.randint(0, 2 ** 31 - 1) if seed is None else seed
-        self._random_health = random_internal
+        self._random_internal = random_internal
         # self.lz4_compress = lz4_compress
 
         self._area = area
@@ -71,9 +71,8 @@ class Env(BaseClass):
     def observation_space(self):
         # return BoxSpace(0, 255, tuple(self._size) + (3,), np.uint8)
         return DictSpace({
-            # "vision": BoxSpace(0, 255, tuple(self._size) + (3,), np.uint8),
             "obs": BoxSpace(0, 255, (3,) + tuple(self._size), np.uint8),  # pytorch order
-            "measurements": BoxSpace(0, 1, (1,), np.float32),
+            "measurements": BoxSpace(0, 1, (4,), np.float32),
         })
     
     @property
@@ -93,7 +92,7 @@ class Env(BaseClass):
         self._step = 0
         self._world.reset(seed=hash((self._seed, self._episode)) % (2 ** 31 - 1))
         self._update_time()
-        self._player = objects.Player(self._world, center, random_internal=self._random_health)
+        self._player = objects.Player(self._world, center, random_internal=self._random_internal)
         
         self._last_intero = self._player.get_interoception()
         
