@@ -37,7 +37,7 @@ walkable:
   - sand
 
 items:
-  health: {max: 10, initial: 10}
+  health: {max: 9, initial: 9}
   food: {max: 9, initial: 9}
   drink: {max: 9, initial: 9}
   energy: {max: 9, initial: 9}
