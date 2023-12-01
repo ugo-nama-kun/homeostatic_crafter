@@ -49,14 +49,17 @@ def main():
             # print(info.keys())
             print(f"health : {info['inventory']['health']}, thirst: {env._player._thirst}, hunger: {env._player._hunger}")
             print(info["interoception"])
-            
             intero_hist.append(info['interoception'])
+            
+            # plt.imshow(env.render((64, 64)))
+            # plt.pause(0.0001)
         
         duration = time.time() - start
         step = env._step
         print(f'Step time: {1000 * duration / step:.2f}ms ({int(step / duration)} FPS)')
         print('Episode length:', step)
-        
+
+        plt.clf()
         plt.subplot(231)
         plt.plot(reward_hist)
         plt.title("reward")

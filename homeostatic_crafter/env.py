@@ -27,13 +27,11 @@ class Env(BaseClass):
             length=10000,
             seed=None,
             random_internal=False,
-            # lz4_compress: bool = False,
     ):
         view = np.array(view if hasattr(view, '__len__') else (view, view))
         size = np.array(size if hasattr(size, '__len__') else (size, size))
         seed = np.random.randint(0, 2 ** 31 - 1) if seed is None else seed
         self._random_internal = random_internal
-        # self.lz4_compress = lz4_compress
 
         self._area = area
         self._view = view
@@ -69,7 +67,6 @@ class Env(BaseClass):
     
     @property
     def observation_space(self):
-        # return BoxSpace(0, 255, tuple(self._size) + (3,), np.uint8)
         return DictSpace({
             "obs": BoxSpace(0, 255, (3,) + tuple(self._size), np.uint8),  # pytorch order
             "measurements": BoxSpace(0, 1, (4,), np.float32),
@@ -167,6 +164,9 @@ class Env(BaseClass):
         return 100 * (drive(last_norm_intero) - drive(norm_intero)), self._player.get_interoception()
         
     def render(self, size=None):
+        return self.get_img(size).transpose((1, 2, 0))  # (c, w, h) --> (w, h, c)
+    
+    def get_img(self, size=None):
         size = size or self._size
         unit = size // self._view
         canvas = np.zeros(tuple(size) + (3,), np.uint8)
@@ -176,16 +176,11 @@ class Env(BaseClass):
         border = (size - (size // self._view) * self._view) // 2
         (x, y), (w, h) = border, view.shape[:2]
         canvas[x: x + w, y: y + h] = view
-        return canvas.transpose((1, 0, 2))
-    
-    def _obs(self, reset=False):
-        vision = self.render()
-        vision = np.transpose(vision, (2, 0, 1))
-        
-        norm_intero = self._player.get_interoception() / self._intero_normalizer
+        return canvas.transpose((2, 1, 0))  # (h, w, c) -> (c, w, h)
 
-        # return {"vision": LazyFrames(vision, self.lz4_compress),
-        #         "intero": np.array([self.normalize_health(self._player.health)], dtype=np.float32)}
+    def _obs(self, reset=False):
+        vision = self.get_img()
+        norm_intero = self._player.get_interoception() / self._intero_normalizer
 
         return {"obs": vision,
                 "measurements": norm_intero}

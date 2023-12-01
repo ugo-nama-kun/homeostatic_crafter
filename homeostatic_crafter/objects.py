@@ -74,7 +74,7 @@ class Player(Object):
             name: info['initial'] for name, info in constants.items.items()}
         
         if random_internal:
-            self.inventory["health"] = 2 + np.random.randint(constants.items["health"]["max"] - 2)
+            self.inventory["health"] = 6 + np.random.randint(constants.items["health"]["max"] - 6)
             self.inventory["food"] = np.random.randint(constants.items["food"]["max"] + 1)
             self.inventory["drink"] = np.random.randint(constants.items["drink"]["max"] + 1)
             self.inventory["energy"] = np.random.randint(constants.items["energy"]["max"] + 1)
