@@ -50,7 +50,7 @@ def main():
             print(f"health : {info['inventory']['health']}, thirst: {env._player._thirst}, hunger: {env._player._hunger}")
             print(info["interoception"])
             intero_hist.append(info['interoception'])
-            print(env.metadata)
+            # print(env.metadata)
             
             # plt.imshow(env.render((64, 64)))
             # plt.pause(0.0001)
@@ -66,7 +66,8 @@ def main():
         plt.title("reward")
         plt.subplot(232)
         plt.plot(intero_hist, label=["health", "food", "drink", "energy"])
-        plt.plot(args.health * np.ones_like(intero_hist) * homeostatic_crafter.constants.homeostasis['target'], "--k", alpha=0.6)
+        target = np.array(list(homeostatic_crafter.constants.homeostasis['target'].values()), dtype=np.float32)
+        plt.plot(args.health * np.ones_like(intero_hist) * target, "--", alpha=0.6, label=["target_h", "target_f", "target_d", "target_e"])
         plt.ylim([-0.1, 9.1])
         plt.title("intero")
         plt.legend()

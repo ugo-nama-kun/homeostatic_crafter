@@ -167,9 +167,12 @@ class Env(BaseClass):
         last_norm_intero = self._last_intero / self._intero_normalizer
         
         def drive(x):
-            return np.sum((x - constants.homeostasis['target']) ** 2)
+            r = 0
+            for i, val in enumerate(['health', 'food', 'drink', 'energy']):
+                r += constants.homeostasis['scale'][val] * (x[i] - constants.homeostasis['target'][val]) ** 2
+            return r
         
-        return 100 * (drive(last_norm_intero) - drive(norm_intero)), self._player.get_interoception()
+        return drive(last_norm_intero) - drive(norm_intero), self._player.get_interoception()
         
     def render(self, size=None):
         return self.get_img(size).transpose((1, 2, 0))  # (c, w, h) --> (w, h, c)

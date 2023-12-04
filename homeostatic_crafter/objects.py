@@ -179,7 +179,6 @@ class Player(Object):
         if self._recover < -15:
             self._recover = 0
             self.health -= 1
-        # self.health -= 1 / 15
     
     def update_interoception(self):
         self._food_monitor += self._monitor_smoother * (self.inventory["food"] - self._food_monitor)
@@ -199,7 +198,7 @@ class Player(Object):
       ], dtype=np.float32)
     
     def _wake_up_when_hurt(self):
-        if self.health - self._last_health < -0.9:  # wake up if got large damage
+        if self.health < self._last_health:  # wake up if got large damage
             self.sleeping = False
         self._last_health = self.health
     
