@@ -1,4 +1,5 @@
 import collections
+from typing import Optional
 
 import numpy as np
 
@@ -15,8 +16,13 @@ DictSpace = gym.spaces.Dict
 BaseClass = gym.Env
 
 # from gymnasium.wrappers.frame_stack import LazyFrames
+FPS = 30
 
 class Env(BaseClass):
+    metadata = {
+        "render_modes": ["human", "rgb_array"],
+        "render_fps"  : FPS,
+    }
     
     def __init__(
             self,
@@ -27,11 +33,14 @@ class Env(BaseClass):
             length=10000,
             seed=None,
             random_internal=False,
+            render_mode: Optional[str] = None,
     ):
+        
         view = np.array(view if hasattr(view, '__len__') else (view, view))
         size = np.array(size if hasattr(size, '__len__') else (size, size))
         seed = np.random.randint(0, 2 ** 31 - 1) if seed is None else seed
         self._random_internal = random_internal
+        self.render_mode = render_mode
 
         self._area = area
         self._view = view
@@ -56,7 +65,6 @@ class Env(BaseClass):
         self._unlocked = None
         # Some libraries expect these attributes to be set.
         self.reward_range = None
-        self.metadata = None
         
         self._intero_normalizer = np.array([
             constants.items['health']['max'],

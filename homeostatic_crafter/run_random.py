@@ -50,6 +50,7 @@ def main():
             print(f"health : {info['inventory']['health']}, thirst: {env._player._thirst}, hunger: {env._player._hunger}")
             print(info["interoception"])
             intero_hist.append(info['interoception'])
+            print(env.metadata)
             
             # plt.imshow(env.render((64, 64)))
             # plt.pause(0.0001)
