@@ -71,6 +71,8 @@ def main():
         plt.ylim([-0.1, 9.1])
         plt.title("intero")
         plt.legend()
+        plt.subplot(233)
+        plt.imshow(np.transpose(obs["obs"], (1, 2, 0)))
         plt.subplot(234)
         plt.imshow(obs["obs"][0])
         plt.subplot(235)
