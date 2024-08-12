@@ -114,6 +114,8 @@ class Env(BaseClass):
             'player_pos'  : self._player.pos,
             'reward'      : None,
             'interoception': intero_now,
+            'daylight': self._world.daylight,
+            'step': self._step,
         }
         
         return self._obs(reset=True), info
@@ -157,6 +159,8 @@ class Env(BaseClass):
             'player_pos'  : self._player.pos,
             'reward'      : reward,
             'interoception': intero_now,
+            'daylight'       : self._world.daylight,
+            'step'        : self._step,
         }
         if not self._reward:
             reward = 0.0

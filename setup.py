@@ -4,7 +4,7 @@ import pathlib
 
 setuptools.setup(
     name='homeostatic_crafter',
-    version='1.0.0',
+    version='1.0.1',
     description='Open world survival game for reinforcement learning.',
     url='https://github.com/ugo-nama-kun/homeostatic_crafter',
     long_description=pathlib.Path('README.md').read_text(),
