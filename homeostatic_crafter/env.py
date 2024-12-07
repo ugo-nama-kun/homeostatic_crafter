@@ -34,6 +34,7 @@ class Env(BaseClass):
             seed=None,
             random_internal=False,
             render_mode: Optional[str] = None,
+            homeostatic=True,
     ):
         
         view = np.array(view if hasattr(view, '__len__') else (view, view))
@@ -49,6 +50,7 @@ class Env(BaseClass):
         self._length = length
         self._seed = seed
         self._episode = 0
+        self._homeostatic = homeostatic
         self._world = engine.World(area, constants.materials, (12, 12))
         self._textures = engine.Textures(constants.root / 'assets')
         item_rows = int(np.ceil(len(constants.items) / view[0]))
@@ -62,6 +64,7 @@ class Env(BaseClass):
         self._step = None
         self._player = None
         self._last_intero = None
+        self._last_health = None
         self._unlocked = None
         # Some libraries expect these attributes to be set.
         self.reward_range = None
@@ -100,7 +103,8 @@ class Env(BaseClass):
         self._player = objects.Player(self._world, center, random_internal=self._random_internal)
         
         self._last_intero = self._player.get_interoception()
-        
+        self._last_health = self._player.health
+
         self._world.add(self._player)
         self._unlocked = set()
         worldgen.generate_world(self._world, self._player)
@@ -136,18 +140,23 @@ class Env(BaseClass):
         
         self._player.update_interoception()
         obs = self._obs()
-        
-        # reward = (self._player.health - self._last_health) / 10  # original reward
-        reward, intero_now = self.get_reward()
-        
+
+        if self._homeostatic:
+            reward, intero_now = self.get_reward()
+        else:
+            _, intero_now = self.get_reward()
+            reward = (self._player.health - self._last_health) / 10  # original reward
+
         self._last_intero = self._player.get_interoception()
-        
+        self._last_health = self._player.health
+
         unlocked = {
             name for name, count in self._player.achievements.items()
             if count > 0 and name not in self._unlocked}
         if unlocked:
             self._unlocked |= unlocked
-            # reward += 1.0  # remove unlock reward
+            if not self._homeostatic:
+                reward += 1.0  # original reward
         dead = self._player.health <= 0
         over = self._length and self._step >= self._length
         done = dead or over
